@@ -110,30 +110,57 @@ const LearningSystem: React.FC<Props> = ({ onBack, currentUser }) => {
 
     // Simulate "Analyze Structure" (replacing Run Code)
     const [analysisOutput, setAnalysisOutput] = useState<string | null>(null);
+    
     const handleAnalyze = () => {
         setAnalysisOutput("正在分析文章結構...");
         // Switch to editor tab to see output if on mobile
         setActiveTab('editor');
         
         const currentContent = studentState.code;
+        const wordCount = currentContent.length;
 
         // Log Analysis Action
-        logService.addLog(currentUser.email, 'ANALYZE', `觸發結構分析, 字數: ${currentContent.length}`);
+        logService.addLog(currentUser.email, 'ANALYZE', `觸發結構分析, 字數: ${wordCount}`);
         
         setTimeout(() => {
-            const wordCount = currentContent.length;
-            let result = "";
+            // Advanced Analysis Logic
+            const keywords = {
+                connectors: ["因為", "所以", "因此", "然而", "但是", "雖然", "此外", "總之", "反之"],
+                evidence: ["例如", "比如", "根據", "數據", "研究", "例子", "事實上"],
+                opinions: ["我認為", "我覺得", "主張", "觀點", "應當", "不應", "相信"]
+            };
 
-            if (wordCount < 30) {
-                 result = `[初階分析] 字數偏少 (${wordCount} 字)。建議先試著描述一個具體的課堂場景，比較 AI 與人類教師的差異。`;
-                 setStudentState(prev => ({ ...prev, conceptMastery: prev.conceptMastery }));
-            } else if (!currentContent.includes("因為") && !currentContent.includes("所以") && !currentContent.includes("例如")) {
-                 result = "[結構建議] 你的論點似乎缺少連接詞。試著使用「因為...所以...」來加強你的推論邏輯。";
-                 setStudentState(prev => ({ ...prev, conceptMastery: prev.conceptMastery + 2 }));
+            const hasConnector = keywords.connectors.some(k => currentContent.includes(k));
+            const hasEvidence = keywords.evidence.some(k => currentContent.includes(k));
+            const hasOpinion = keywords.opinions.some(k => currentContent.includes(k));
+
+            let result = "";
+            let masteryBonus = 0;
+
+            if (wordCount < 50) {
+                 result = `[字數不足] 目前僅 ${wordCount} 字。試著運用「因為...所以...」的句型來擴充你的論點，解釋為什麼你會有這樣的想法。`;
+            } else if (!hasOpinion) {
+                 result = `[觀點不明] 文章似乎在描述現象，但缺少了你的核心主張。請試著加入「我認為...」或「我的主張是...」來明確表達立場。`;
+                 masteryBonus = 2;
+            } else if (!hasEvidence) {
+                 result = `[缺乏證據] 你提出了明確的觀點，這很好！但若能加入「例如...」或「根據...」來提供具體例子，說服力會大幅提升。`;
+                 masteryBonus = 5;
+            } else if (!hasConnector) {
+                 result = `[邏輯連接] 你的句子之間較為獨立。試著使用「然而」、「因此」或「此外」這些連接詞，讓文章讀起來更流暢。`;
+                 masteryBonus = 5;
             } else {
-                 result = "[表現優異] 文章結構完整，包含了論點與連接詞！建議你可以詢問右側的 AI 教練，看看是否有反面論點可以補充。";
-                 setStudentState(prev => ({ ...prev, conceptMastery: 85, cognitiveLoad: 'optimal' }));
+                 result = `[表現優異] 結構完整！包含了明確主張、具體證據與邏輯連接。建議你可以挑戰反面論點：思考一下反對你的人會怎麼說？`;
+                 masteryBonus = 20;
+                 // Set optimal state if structure is good
+                 setStudentState(prev => ({ ...prev, cognitiveLoad: 'optimal' }));
             }
+
+            // Update mastery
+            setStudentState(prev => ({ 
+                ...prev, 
+                conceptMastery: Math.min(100, Math.max(prev.conceptMastery, 40 + masteryBonus + (wordCount > 100 ? 10 : 0)))
+            }));
+
             setAnalysisOutput(result);
             logService.addLog(currentUser.email, 'ANALYZE_RESULT', result);
 
@@ -212,6 +239,8 @@ const LearningSystem: React.FC<Props> = ({ onBack, currentUser }) => {
                     {/* Writing Editor Area */}
                     <div className="flex-1 relative group">
                         <textarea 
+                            id="essay-content"
+                            name="essay-content"
                             value={studentState.code}
                             onChange={handleContentChange}
                             placeholder="請在此開始寫作... (例如：我認為 AI 不應該完全取代老師，因為...)"
@@ -326,6 +355,8 @@ const LearningSystem: React.FC<Props> = ({ onBack, currentUser }) => {
                         <div className="p-3 bg-white border-t border-slate-200 shrink-0 pb-6 md:pb-3">
                             <div className="relative">
                                 <input
+                                    id="chat-input"
+                                    name="chat-input"
                                     type="text"
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
