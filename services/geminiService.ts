@@ -71,10 +71,31 @@ const thesisSchema: Schema = {
 };
 
 const getAIClient = () => {
-    const apiKey = process.env.API_KEY;
+    // 嘗試從不同的來源獲取 API Key 以相容 Vercel/Vite 環境
+    let apiKey = "";
+    
+    // 1. 嘗試 process.env (Node.js 或 Webpack DefinePlugin)
+    try {
+        if (typeof process !== 'undefined' && process.env?.API_KEY) {
+            apiKey = process.env.API_KEY;
+        }
+    } catch (e) {}
+
+    // 2. 嘗試 import.meta.env (Vite 標準)，Vercel 通常需要 VITE_ 前綴
     if (!apiKey) {
-        throw new Error("系統環境變數錯誤：API_KEY 未設定。請在 Vercel 專案設定中加入 API_KEY。");
+        try {
+            const meta = import.meta as any;
+            if (meta.env) {
+                apiKey = meta.env.VITE_API_KEY || meta.env.API_KEY || "";
+            }
+        } catch (e) {}
     }
+
+    if (!apiKey) {
+        console.error("API Key 未設定。請檢查 Vercel 環境變數設定。");
+        throw new Error("系統環境變數錯誤：找不到 API Key。請在 Vercel 專案設定中加入環境變數 'VITE_API_KEY' (值為您的 Gemini API Key)。");
+    }
+    
     return new GoogleGenAI({ apiKey });
 }
 
@@ -123,8 +144,8 @@ export const generateThesisProposal = async (
     return JSON.parse(text) as ThesisProposal;
   } catch (error: any) {
     console.error("Error generating thesis proposal:", error);
-    if (error.message && error.message.includes("API_KEY")) {
-        throw error; // Rethrow specific configuration error
+    if (error.message && (error.message.includes("API_KEY") || error.message.includes("API Key"))) {
+        throw error; 
     }
     throw new Error("生成過程中發生錯誤，請檢查額度或稍後再試。");
   }
@@ -176,8 +197,13 @@ export const generateScaffoldingResponse = async (
             }
         });
         return response.text || "抱歉，我目前無法分析您的內容，請稍後再試。";
-    } catch (error) {
+    } catch (error: any) {
         console.error("Scaffolding agent error:", error);
-        return "連線發生錯誤，請檢查網路狀態或 API Key。";
+        // Explicitly throw API key errors to show correct feedback
+        if (error.message && (error.message.includes("API_KEY") || error.message.includes("API Key"))) {
+             // We return a user-friendly string that indicates config error
+             return "系統錯誤：API Key 未設定或無效 (VITE_API_KEY)。請聯絡管理員。";
+        }
+        return "連線發生錯誤，請檢查網路狀態。";
     }
 }
