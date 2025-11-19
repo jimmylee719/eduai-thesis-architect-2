@@ -62,46 +62,55 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 ml-1">姓名</label>
+              <label htmlFor="name" className="text-sm font-medium text-slate-700 ml-1">姓名</label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
+                  id="name"
+                  name="name"
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
                   placeholder="您的稱呼"
+                  autoComplete="name"
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 ml-1">Email</label>
+            <label htmlFor="email" className="text-sm font-medium text-slate-700 ml-1">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
+                id="email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
                 placeholder="user@mail.com"
                 required
+                autoComplete="email"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-             <label className="text-sm font-medium text-slate-700 ml-1">密碼</label>
+             <label htmlFor="password" className="text-sm font-medium text-slate-700 ml-1">密碼</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
+                id="password"
+                name="password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
                 placeholder="••••••••"
                 required
+                autoComplete={isLogin ? "current-password" : "new-password"}
               />
             </div>
           </div>
