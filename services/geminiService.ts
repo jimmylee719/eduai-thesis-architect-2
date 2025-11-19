@@ -71,29 +71,14 @@ const thesisSchema: Schema = {
 };
 
 const getAIClient = () => {
-    // 嘗試從不同的來源獲取 API Key 以相容 Vercel/Vite 環境
-    let apiKey = "";
-    
-    // 1. 嘗試 process.env (Node.js 或 Webpack DefinePlugin)
-    try {
-        if (typeof process !== 'undefined' && process.env?.API_KEY) {
-            apiKey = process.env.API_KEY;
-        }
-    } catch (e) {}
-
-    // 2. 嘗試 import.meta.env (Vite 標準)，Vercel 通常需要 VITE_ 前綴
-    if (!apiKey) {
-        try {
-            const meta = import.meta as any;
-            if (meta.env) {
-                apiKey = meta.env.VITE_API_KEY || meta.env.API_KEY || "";
-            }
-        } catch (e) {}
-    }
+    // Vercel + Vite Environment Variable Handling
+    // In Vite, environment variables must be prefixed with VITE_ to be exposed to the client-side via import.meta.env
+    const meta = import.meta as any;
+    const apiKey = meta.env?.VITE_API_KEY || meta.env?.API_KEY || "";
 
     if (!apiKey) {
-        console.error("API Key 未設定。請檢查 Vercel 環境變數設定。");
-        throw new Error("系統環境變數錯誤：找不到 API Key。請在 Vercel 專案設定中加入環境變數 'VITE_API_KEY' (值為您的 Gemini API Key)。");
+        console.error("API Key Error: No VITE_API_KEY found in environment.");
+        throw new Error("系統環境變數錯誤：找不到 API Key。請在 Vercel 專案設定中加入環境變數 'VITE_API_KEY' (值為您的 Gemini API Key) 並重新部署。");
     }
     
     return new GoogleGenAI({ apiKey });
